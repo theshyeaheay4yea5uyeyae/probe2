@@ -1,0 +1,42 @@
+name: Build probe2 PLog heartbeat
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'probe2.yml'
+      - 'build.sh'
+      - 'Dockerfile.local-vitasdk'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build VitaSDK Docker image
+        run: docker build -f Dockerfile.local-vitasdk -t local-vitasdk-ubuntu24 .
+
+      - name: Build SUPRX
+        run: |
+          mkdir -p dist
+          docker run --rm -v "$PWD:/src" local-vitasdk-ubuntu24 \
+            /bin/bash -lc "cmake -S /src -B /src/build && cmake --build /src/build --verbose && cp /src/build/probe2.suprx /src/dist/probe2.suprx"
+          ls -l dist/probe2.suprx
+          sha256sum dist/probe2.suprx | tee dist/probe2.suprx.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe2_plog_heartbeat_suprx
+          path: |
+            dist/probe2.suprx
+            dist/probe2.suprx.sha256
+          if-no-files-found: error
