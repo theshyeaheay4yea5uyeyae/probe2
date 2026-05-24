@@ -1,0 +1,13 @@
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates git wget curl sudo python3 make cmake build-essential \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth=1 https://github.com/vitasdk/vdpm.git /tmp/vdpm \
+    && cd /tmp/vdpm \
+    && ./bootstrap-vitasdk.sh \
+    && ./install-all.sh \
+    && rm -rf /tmp/vdpm
+ENV VITASDK=/usr/local/vitasdk
+ENV PATH=$VITASDK/bin:$PATH
+WORKDIR /src
